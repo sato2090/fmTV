@@ -3,9 +3,9 @@ package com.fongmi.android.tv.ui.activity;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
-import android.text.TextUtils;
 import android.view.View;
 
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.viewbinding.ViewBinding;
 
 import com.fongmi.android.tv.App;
@@ -13,23 +13,25 @@ import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.api.LiveChecker;
 import com.fongmi.android.tv.api.config.LiveConfig;
 import com.fongmi.android.tv.bean.Config;
-import com.fongmi.android.tv.bean.Group;
 import com.fongmi.android.tv.bean.InvalidChannel;
 import com.fongmi.android.tv.bean.Live;
+import com.fongmi.android.tv.bean.LiveSource;
 import com.fongmi.android.tv.databinding.ActivitySourceBinding;
 import com.fongmi.android.tv.event.RefreshEvent;
 import com.fongmi.android.tv.impl.Callback;
 import com.fongmi.android.tv.setting.LiveSetting;
+import com.fongmi.android.tv.ui.adapter.SourceAdapter;
 import com.fongmi.android.tv.ui.base.BaseActivity;
 import com.fongmi.android.tv.utils.Notify;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
+import java.util.ArrayList;
+import java.util.List;
 
-public class SourceActivity extends BaseActivity implements LiveChecker.Listener {
+public class SourceActivity extends BaseActivity implements SourceAdapter.OnClickListener {
 
     private ActivitySourceBinding mBinding;
+    private SourceAdapter mAdapter;
     private boolean testing;
 
     public static void start(Activity activity) {
@@ -43,52 +45,36 @@ public class SourceActivity extends BaseActivity implements LiveChecker.Listener
 
     @Override
     protected void initView(Bundle savedInstanceState) {
-        mBinding.sync.requestFocus();
-        refreshInfo();
+        mBinding.recycler.setItemAnimator(null);
+        mBinding.recycler.setLayoutManager(new LinearLayoutManager(this));
+        mBinding.recycler.setAdapter(mAdapter = new SourceAdapter(this));
+        mAdapter.addAll(LiveSource.getAll());
+        mBinding.syncAll.requestFocus();
     }
 
     @Override
     protected void initEvent() {
-        mBinding.sync.setOnClickListener(this::onSync);
+        mBinding.syncAll.setOnClickListener(this::onSyncAll);
         mBinding.testAll.setOnClickListener(this::onTestAll);
         mBinding.clear.setOnClickListener(this::onClear);
     }
 
-    private void refreshInfo() {
-        Live home = LiveConfig.get().getHome();
-        int groups = 0;
-        int channels = 0;
-        for (Group group : home.getGroups()) {
-            if (group.isKeep()) continue;
-            groups++;
-            channels += group.getChannel().size();
-        }
-        String url = LiveConfig.getUrl();
-        long time = LiveSetting.getSyncTime();
-        mBinding.sourceName.setText(TextUtils.isEmpty(home.getName()) ? "-" : home.getName());
-        mBinding.sourceUrl.setText(TextUtils.isEmpty(url) ? "-" : url);
-        mBinding.sourceStat.setText(getString(R.string.source_stat, groups, channels));
-        mBinding.sourceInvalid.setText(getString(R.string.source_invalid, InvalidChannel.count()));
-        mBinding.sourceSyncTime.setText(time == 0 ? getString(R.string.source_never) : getString(R.string.source_last_sync, format(time)));
-    }
-
-    private String format(long time) {
-        return new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(new Date(time));
-    }
-
-    private void onSync(View view) {
+    private void onSyncAll(View view) {
         if (testing) return;
+        LiveSource.clearCache();
+        reload();
+    }
+
+    private void reload() {
         Notify.progress(this);
         LiveConfig.load(Config.live(), new Callback() {
             @Override
             public void success() {
-                InvalidChannel.deleteAll();
                 LiveSetting.putSyncTime(System.currentTimeMillis());
                 App.post(() -> {
                     Notify.dismiss();
                     RefreshEvent.live();
-                    if (isFinishing() || isDestroyed()) return;
-                    refreshInfo();
+                    refresh();
                     Notify.show(R.string.source_sync_success);
                 });
             }
@@ -103,42 +89,115 @@ public class SourceActivity extends BaseActivity implements LiveChecker.Listener
         });
     }
 
+    private void refresh() {
+        if (isFinishing() || isDestroyed()) return;
+        mAdapter.addAll(LiveSource.getAll());
+    }
+
     private void onTestAll(View view) {
         if (testing) {
             LiveChecker.cancel();
             mBinding.status.setText(R.string.source_test_stopped);
             return;
         }
+        List<LiveSource> items = new ArrayList<>(LiveSource.getEnabled());
+        if (items.isEmpty()) return;
         testing = true;
         mBinding.testAll.setText(R.string.source_test_cancel);
-        mBinding.status.setText(R.string.source_testing);
+        testNext(items, 0, 0);
+    }
+
+    private void testNext(List<LiveSource> items, int sumTotal, int sumInvalid) {
+        if (items.isEmpty() || !testing) {
+            finishTest(sumTotal, sumInvalid);
+            return;
+        }
+        LiveSource item = items.remove(0);
+        mBinding.status.setText(getString(R.string.source_test_source, item.getName()));
+        LiveChecker.testAll(item, new LiveChecker.Listener() {
+            @Override
+            public void onProgress(int done, int total, int invalid) {
+                if (isFinishing() || isDestroyed()) return;
+                mBinding.status.setText(getString(R.string.source_test_detail, item.getName(), done, total, invalid));
+            }
+
+            @Override
+            public void onFinish(int total, int invalid) {
+                App.post(() -> testNext(items, sumTotal + total, sumInvalid + invalid));
+            }
+        });
+    }
+
+    private void finishTest(int total, int invalid) {
+        testing = false;
         Live home = LiveConfig.get().getHome();
-        LiveChecker.testAll(home, home.getGroups(), this);
+        LiveChecker.applyInvalid(home);
+        LiveSource.prune(home);
+        RefreshEvent.live();
+        if (isFinishing() || isDestroyed()) return;
+        mBinding.testAll.setText(R.string.source_test_all);
+        mBinding.status.setText(getString(R.string.source_test_done, total, invalid));
+        refresh();
     }
 
     private void onClear(View view) {
         if (testing) return;
         InvalidChannel.deleteAll();
-        RefreshEvent.live();
-        refreshInfo();
-        Notify.show(R.string.source_clear_done);
+        LiveSource.clearCache();
+        mBinding.status.setText(R.string.source_clear_done);
+        reload();
     }
 
     @Override
-    public void onProgress(int done, int total, int invalid) {
-        if (isFinishing() || isDestroyed()) return;
-        mBinding.status.setText(getString(R.string.source_test_progress, done, total, invalid));
+    public void onItemClick(LiveSource item) {
+        if (testing) return;
+        item.toggle();
+        mBinding.status.setText(getString(item.isEnable() ? R.string.source_toggle_on : R.string.source_toggle_off, item.getName()));
+        LiveSource.clearCache();
+        LiveSource.syncConfig();
+        reload();
     }
 
     @Override
-    public void onFinish(int total, int invalid) {
-        testing = false;
-        LiveChecker.applyInvalid(LiveConfig.get().getHome());
-        RefreshEvent.live();
-        if (isFinishing() || isDestroyed()) return;
-        mBinding.testAll.setText(R.string.source_test_all);
-        mBinding.status.setText(getString(R.string.source_test_done, total, invalid));
-        refreshInfo();
+    public void onLongClick(LiveSource item) {
+        if (testing) return;
+        String[] actions = {getString(R.string.source_sync_one), getString(R.string.source_test_one), getString(R.string.source_clear_one)};
+        new MaterialAlertDialogBuilder(this).setItems(actions, (dialog, which) -> {
+            if (which == 0) syncOne(item);
+            else if (which == 1) testOne(item);
+            else clearOne(item);
+        }).show();
+    }
+
+    private void syncOne(LiveSource item) {
+        LiveSource.clear(item.getUrl());
+        reload();
+    }
+
+    private void testOne(LiveSource item) {
+        if (testing) return;
+        testing = true;
+        mBinding.testAll.setText(R.string.source_test_cancel);
+        mBinding.status.setText(getString(R.string.source_test_source, item.getName()));
+        LiveSource.clear(item.getUrl());
+        LiveChecker.testAll(item, new LiveChecker.Listener() {
+            @Override
+            public void onProgress(int done, int total, int invalid) {
+                if (isFinishing() || isDestroyed()) return;
+                mBinding.status.setText(getString(R.string.source_test_detail, item.getName(), done, total, invalid));
+            }
+
+            @Override
+            public void onFinish(int total, int invalid) {
+                App.post(() -> finishTest(total, invalid));
+            }
+        });
+    }
+
+    private void clearOne(LiveSource item) {
+        InvalidChannel.deleteBySource(item.getUrl());
+        LiveSource.clear(item.getUrl());
+        reload();
     }
 
     @Override

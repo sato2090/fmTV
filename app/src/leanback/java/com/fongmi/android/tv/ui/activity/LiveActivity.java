@@ -5,10 +5,13 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.text.Editable;
 import android.text.TextUtils;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -36,6 +39,7 @@ import com.fongmi.android.tv.bean.InvalidChannel;
 import com.fongmi.android.tv.bean.Keep;
 import com.fongmi.android.tv.bean.Live;
 import com.fongmi.android.tv.bean.Result;
+import com.fongmi.android.tv.bean.LiveSource;
 import com.fongmi.android.tv.databinding.ActivityLiveBinding;
 import com.fongmi.android.tv.event.RefreshEvent;
 import com.fongmi.android.tv.impl.Callback;
@@ -57,6 +61,8 @@ import com.fongmi.android.tv.setting.PlayerSetting;
 import com.fongmi.android.tv.ui.adapter.ChannelAdapter;
 import com.fongmi.android.tv.ui.adapter.EpgDataAdapter;
 import com.fongmi.android.tv.ui.adapter.GroupAdapter;
+import com.fongmi.android.tv.ui.adapter.LiveSourceAdapter;
+import com.fongmi.android.tv.ui.custom.CustomTextListener;
 import com.fongmi.android.tv.ui.custom.LiveInput;
 import com.fongmi.android.tv.ui.custom.CustomLiveListView;
 import com.fongmi.android.tv.ui.dialog.HistoryDialog;
@@ -89,6 +95,7 @@ public class LiveActivity extends PlaybackActivity implements GroupAdapter.OnCli
     private LivePlaybackController mLive;
     private GroupAdapter mGroupAdapter;
     private ChannelAdapter mChannelAdapter;
+    private LiveSourceAdapter mLiveSourceAdapter;
     private EpgDataAdapter mEpgDataAdapter;
     private LiveInput mInput;
     private Clock mClock;
@@ -104,6 +111,9 @@ public class LiveActivity extends PlaybackActivity implements GroupAdapter.OnCli
     private Channel mChannel;
     private Channel mRestoreChannel;
     private String mPlaybackKey;
+    private LiveSource mSubscribe;
+    private boolean mSearching;
+    private boolean mSourceVisible;
     private int count;
 
     public static void start(Context context) {
@@ -177,9 +187,22 @@ public class LiveActivity extends PlaybackActivity implements GroupAdapter.OnCli
     @Override
     @SuppressLint("ClickableViewAccessibility")
     protected void initEvent() {
+        mBinding.source.setListener(this);
         mBinding.group.setListener(this);
         mBinding.channel.setListener(this);
         mBinding.epgData.setListener(this);
+        mBinding.keyword.addTextChangedListener(new CustomTextListener() {
+            @Override
+            public void afterTextChanged(Editable s) {
+                onSearch(s == null ? "" : s.toString().trim());
+            }
+        });
+        mBinding.keyword.setOnEditorActionListener((view, actionId, event) -> {
+            if (actionId != EditorInfo.IME_ACTION_SEARCH && actionId != EditorInfo.IME_ACTION_DONE) return false;
+            mBinding.group.requestFocus();
+            return true;
+        });
+        mBinding.closeSearch.setOnClickListener(view -> hideSearch());
         mBinding.control.action.text.setOnClickListener(this::onTrack);
         mBinding.control.action.audio.setOnClickListener(this::onTrack);
         mBinding.control.action.video.setOnClickListener(this::onTrack);
@@ -205,9 +228,11 @@ public class LiveActivity extends PlaybackActivity implements GroupAdapter.OnCli
     }
 
     private void setRecyclerView() {
+        mBinding.source.setItemAnimator(null);
         mBinding.group.setItemAnimator(null);
         mBinding.channel.setItemAnimator(null);
         mBinding.epgData.setItemAnimator(null);
+        mBinding.source.setAdapter(mLiveSourceAdapter = new LiveSourceAdapter(this::onSubscribeClick));
         mBinding.group.setAdapter(mGroupAdapter = new GroupAdapter(this));
         mBinding.channel.setAdapter(mChannelAdapter = new ChannelAdapter(this));
         mBinding.epgData.setAdapter(mEpgDataAdapter = new EpgDataAdapter(this));
@@ -285,12 +310,127 @@ public class LiveActivity extends PlaybackActivity implements GroupAdapter.OnCli
     }
 
     private void setGroup(Live live) {
+        setSubscribe();
         List<Group> items = new ArrayList<>();
-        for (Group group : live.getGroups()) (group.isHidden() ? mHides : items).add(group);
+        for (Group group : live.getGroups()) {
+            if (group.isKeep() || match(group)) (group.isHidden() ? mHides : items).add(group);
+        }
         mGroupAdapter.addAll(items);
         int[] position = LiveConfig.get().findChannelPosition(mRestoreChannel, items);
         mRestoreChannel = null;
         setPosition(position[0] == -1 ? LiveConfig.get().findKeepPosition(items) : position);
+    }
+
+    /**
+     * 顶部订阅源导航：仅展示「全部频道」搜索入口时不会额外占用一列，
+     * 开启多个订阅源时才出现真正的源级别切换。
+     */
+    private void setSubscribe() {
+        List<LiveSource> items = LiveSource.getEnabled();
+        mLiveSourceAdapter.addAll(items, getString(R.string.search_all));
+        if (items.isEmpty()) {
+            mSubscribe = null;
+            setSourceVisible(false);
+            return;
+        }
+        setWidthSubscribe(items);
+        setSourceVisible(true);
+        if (mSubscribe == null || !items.contains(mSubscribe)) mSubscribe = items.get(0);
+        mBinding.source.setSelectedPosition(Math.max(mLiveSourceAdapter.indexOf(mSubscribe.getUrl()), 0));
+    }
+
+    private void setWidthSubscribe(List<LiveSource> items) {
+        int padding = ResUtil.dp2px(52);
+        int width = ResUtil.getTextWidth(getString(R.string.search_all), 16);
+        for (LiveSource item : items) width = Math.max(width, ResUtil.getTextWidth(item.getName(), 16));
+        setWidth(mBinding.source, Math.min(width + padding, ResUtil.getScreenWidth() / 4));
+    }
+
+    private void setSourceVisible(boolean visible) {
+        mSourceVisible = visible;
+        mBinding.source.setVisibility(visible ? View.VISIBLE : View.GONE);
+    }
+
+    private boolean match(Group group) {
+        if (mSubscribe == null) return true;
+        return mSubscribe.getUrl().equals(group.getSource());
+    }
+
+    private void onSubscribeClick(LiveSource item) {
+        if (item.isSearch()) showSearch();
+        else if (mSubscribe == null || !mSubscribe.getUrl().equals(item.getUrl())) switchSource(item);
+    }
+
+    private void switchSource(LiveSource item) {
+        mSubscribe = item;
+        hideSearchPanel();
+        renderGroups();
+    }
+
+    private void renderGroups() {
+        mHides.clear();
+        mEpgDataAdapter.clear();
+        mChannelAdapter.clear();
+        mGroupAdapter.clear();
+        mSearching = false;
+        mGroup = null;
+        setGroup(getHome());
+        setWidth(getHome());
+        mBinding.group.requestFocus();
+    }
+
+    private void showSearch() {
+        mSearching = true;
+        hideControl();
+        mBinding.keyword.setText("");
+        mBinding.search.setVisibility(View.VISIBLE);
+        App.post(this::showKeyboard, 100);
+    }
+
+    private void showKeyboard() {
+        mBinding.keyword.requestFocus();
+        InputMethodManager manager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (manager != null) manager.showSoftInput(mBinding.keyword, InputMethodManager.SHOW_IMPLICIT);
+    }
+
+    private void hideSearch() {
+        hideSearchPanel();
+        renderGroups();
+    }
+
+    private void hideSearchPanel() {
+        mSearching = false;
+        mBinding.keyword.setText("");
+        mBinding.search.setVisibility(View.GONE);
+    }
+
+    /**
+     * 跨源搜索：在所有已启用订阅源的频道里按名称匹配。
+     */
+    private void onSearch(String keyword) {
+        if (!mSearching) return;
+        if (keyword.isEmpty()) {
+            mChannelAdapter.clear();
+            return;
+        }
+        String value = keyword.toLowerCase();
+        List<Group> home = getHome().getGroups();
+        List<Channel> result = new ArrayList<>();
+        for (Group group : home) {
+            if (group.isKeep() || group.isHidden()) continue;
+            for (Channel channel : group.getChannel()) if (contains(channel, value)) result.add(channel);
+        }
+        Group item = new Group(getString(R.string.search_result, keyword, result.size()));
+        item.getChannel().addAll(result);
+        List<Group> items = new ArrayList<>();
+        if (!home.isEmpty() && home.get(0).isKeep()) items.add(home.get(0));
+        items.add(item);
+        mGroupAdapter.addAll(items);
+        mBinding.group.setSelectedPosition(items.size() - 1);
+    }
+
+    private boolean contains(Channel item, String keyword) {
+        return item.getName().toLowerCase().contains(keyword) || item.getShow().toLowerCase().contains(keyword) || item.getNumber().equals(keyword);
     }
 
     private void setWidth(Live live) {
@@ -566,6 +706,7 @@ public class LiveActivity extends PlaybackActivity implements GroupAdapter.OnCli
         mBinding.epgData.setVisibility(View.VISIBLE);
         mBinding.channel.setVisibility(View.GONE);
         mBinding.group.setVisibility(View.GONE);
+        mBinding.source.setVisibility(View.GONE);
         mBinding.epgData.requestFocus();
     }
 
@@ -573,6 +714,7 @@ public class LiveActivity extends PlaybackActivity implements GroupAdapter.OnCli
     public void hideEpg() {
         mBinding.channel.setVisibility(View.VISIBLE);
         mBinding.group.setVisibility(View.VISIBLE);
+        mBinding.source.setVisibility(mSourceVisible ? View.VISIBLE : View.GONE);
         mBinding.epgData.setVisibility(View.GONE);
         mBinding.channel.requestFocus();
     }
@@ -725,7 +867,7 @@ public class LiveActivity extends PlaybackActivity implements GroupAdapter.OnCli
         } else if (result) {
             Notify.show(R.string.channel_valid);
         } else {
-            InvalidChannel.save(InvalidChannel.key(getHome().getName(), item.getName()));
+            InvalidChannel.save(LiveChecker.key(item));
             if (mGroup != null) mGroup.getChannel().remove(item);
             mChannelAdapter.remove(item);
             if (mChannelAdapter.getItemCount() == 0) mBinding.group.requestFocus();
@@ -1146,7 +1288,9 @@ public class LiveActivity extends PlaybackActivity implements GroupAdapter.OnCli
 
     @Override
     protected void onBackInvoked() {
-        if (isVisible(mBinding.control.getRoot())) {
+        if (isVisible(mBinding.search)) {
+            hideSearch();
+        } else if (isVisible(mBinding.control.getRoot())) {
             hideControl();
         } else if (isVisible(mBinding.widget.bottom)) {
             hideInfo();

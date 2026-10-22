@@ -48,5 +48,18 @@
     <string name="channel_valid">该源可用</string>
     <string name="channel_invalid">%1$s 不可用，已隐藏</string>
     <string name="channel_test_unsupported">该源类型无法检测</string>
+    <string name="source_enabled">已启用</string>
+    <string name="source_disabled">已关闭</string>
+    <string name="source_toggle_on">%1$s 已启用</string>
+    <string name="source_toggle_off">%1$s 已关闭</string>
+    <string name="source_test_source">正在检测 %1$s…</string>
+    <string name="source_test_detail">%1$s：已检测 %2$d/%3$d · 不可用 %4$d</string>
+    <string name="source_sync_one">同步该源</string>
+    <string name="source_test_one">检测该源全部地址</string>
+    <string name="source_clear_one">清除该源无效标记</string>
+    <string name="search_all">全部频道</string>
+    <string name="search_hint">搜索全部频道</string>
+    <string name="search_result">搜索：%1$s（%2$d）</string>
+    <string name="search_close">退出搜索</string>
 
 </resources>

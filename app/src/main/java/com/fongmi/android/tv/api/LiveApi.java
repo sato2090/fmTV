@@ -13,6 +13,7 @@ import com.fongmi.android.tv.bean.EpgData;
 import com.fongmi.android.tv.bean.Group;
 import com.fongmi.android.tv.bean.Live;
 import com.fongmi.android.tv.bean.Result;
+import com.fongmi.android.tv.bean.LiveSource;
 import com.fongmi.android.tv.player.extractor.Source;
 import com.fongmi.android.tv.utils.Formatters;
 import com.github.catvod.net.OkHttp;
@@ -24,6 +25,7 @@ public class LiveApi {
 
     public static void parse(@NonNull Live item) throws Exception {
         LiveParser.start(item.recent());
+        LiveSource.merge(item);
         filterInvalid(item);
         item.getGroups().removeIf(Group::isEmpty);
         if (item.getGroups().isEmpty() || item.getGroups().get(0).isKeep()) return;

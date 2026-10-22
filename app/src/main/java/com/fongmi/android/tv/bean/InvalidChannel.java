@@ -28,10 +28,29 @@ public class InvalidChannel {
         this.time = System.currentTimeMillis();
     }
 
-    public static String key(String live, String channel) {
-        String name = live == null ? "" : live;
+    /**
+     * 失效标记的主键：订阅源地址 + 频道名。
+     * 使用订阅源地址而非主源名称，避免多个源之间同名频道互相误杀。
+     */
+    public static String key(String source, String channel) {
+        String name = source == null ? "" : source;
         String value = channel == null ? "" : channel;
         return name.concat(AppDatabase.SYMBOL).concat(value);
+    }
+
+    public static void delete(String key) {
+        AppDatabase.get().getInvalidChannelDao().delete(key);
+    }
+
+    public static void deleteBySource(String source) {
+        AppDatabase.get().getInvalidChannelDao().deleteBySource(source.concat(AppDatabase.SYMBOL));
+    }
+
+    /**
+     * 某个订阅源下被标记为不可用的频道数量。
+     */
+    public static int count(String source) {
+        return AppDatabase.get().getInvalidChannelDao().count(source == null ? "" : source.concat(AppDatabase.SYMBOL));
     }
 
     public static Set<String> keys() {

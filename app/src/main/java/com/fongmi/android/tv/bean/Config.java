@@ -95,13 +95,24 @@ public class Config {
         return item == null ? create(0) : item;
     }
 
-    public static final String DEFAULT_LIVE = "https://gitee.com/kinnday/publicInfos/raw/master/ipm3u";
+    public static final String DEFAULT_LIVE = "https://raw.giteeusercontent.com/kinnday/publicInfos/raw/master/m3u/acore.m3u";
+    public static final String LEGACY_LIVE = "https://gitee.com/kinnday/publicInfos/raw/master/ipm3u";
 
     public static Config live() {
         String url = Prefers.getString("config_1", DEFAULT_LIVE);
         Config item = TextUtils.isEmpty(url) ? null : AppDatabase.get().getConfigDao().find(url, 1);
         if (item == null) item = AppDatabase.get().getConfigDao().findOne(1);
-        return item == null ? create(1, DEFAULT_LIVE, "央视卫视直播") : item;
+        if (item == null) item = create(1, DEFAULT_LIVE, "央视卫视直播");
+        // 旧的 ipm3u 目录已被移除，已保存过该地址的客户端自动纠正
+        if (item.isEmpty() || item.getUrl().startsWith(LEGACY_LIVE)) item = fix(item);
+        return item;
+    }
+
+    private static Config fix(Config item) {
+        LiveSource home = LiveSource.home();
+        String url = home == null ? DEFAULT_LIVE : home.getUrl();
+        String name = home == null || home.getName().isEmpty() ? "央视卫视直播" : home.getName();
+        return Config.find(url, name, 1).update();
     }
 
     public static Config wall() {

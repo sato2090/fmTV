@@ -54,6 +54,18 @@
         tools:visibility="visible">
 
         <com.fongmi.android.tv.ui.custom.CustomLiveListView
+            android:id="@+id/source"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:padding="12dp"
+            android:visibility="gone"
+            tools:itemCount="3"
+            tools:listitem="@layout/adapter_subscribe"
+            tools:visibility="visible" />
+
+        <com.fongmi.android.tv.ui.custom.CustomLiveListView
             android:id="@+id/group"
             android:layout_width="0dp"
             android:layout_height="match_parent"
@@ -85,5 +97,44 @@
             tools:listitem="@layout/adapter_epg_data" />
 
     </androidx.appcompat.widget.LinearLayoutCompat>
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:id="@+id/search"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="start|top"
+        android:background="@drawable/shape_live_list"
+        android:focusable="false"
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:visibility="gone"
+        tools:visibility="visible">
+
+        <androidx.appcompat.widget.AppCompatEditText
+            android:id="@+id/keyword"
+            android:layout_width="280dp"
+            android:layout_height="wrap_content"
+            android:hint="@string/search_hint"
+            android:imeOptions="actionSearch"
+            android:inputType="text"
+            android:singleLine="true"
+            android:textColor="@color/white"
+            android:textColorHint="@color/text"
+            android:textSize="16sp" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/closeSearch"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/selector_live"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:text="@string/search_close"
+            android:textColor="@color/text"
+            android:textSize="14sp" />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
 </FrameLayout>
 

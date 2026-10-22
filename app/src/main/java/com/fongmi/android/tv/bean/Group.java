@@ -26,6 +26,8 @@ public class Group {
     @SerializedName("pass")
     private String pass;
 
+    private String source;
+
     private boolean selected;
     private int position;
     private int width;
@@ -80,6 +82,17 @@ public class Group {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    /**
+     * 该分组所属的订阅源地址，用于多源导航与失效标记。
+     */
+    public String getSource() {
+        return source == null ? "" : source;
+    }
+
+    public void setSource(String source) {
+        this.source = source;
     }
 
     public String getPass() {

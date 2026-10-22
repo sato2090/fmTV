@@ -65,4 +65,16 @@ public class Migrations {
             database.execSQL("CREATE TABLE IF NOT EXISTS `InvalidChannel` (`key` TEXT NOT NULL, `time` INTEGER NOT NULL, PRIMARY KEY(`key`))");
         }
     };
+
+    /**
+     * 37 -> 38：新增订阅源表。
+     * 失效频道的标记规则由「主源名称」改为「订阅源地址」，旧标记一并作废。
+     */
+    public static final Migration MIGRATION_37_38 = new Migration(37, 38) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL("CREATE TABLE IF NOT EXISTS `LiveSource` (`url` TEXT NOT NULL, `name` TEXT, `sort` INTEGER NOT NULL, `enable` INTEGER NOT NULL, `time` INTEGER NOT NULL, `channelCount` INTEGER NOT NULL, `groupCount` INTEGER NOT NULL, PRIMARY KEY(`url`))");
+            database.execSQL("DELETE FROM InvalidChannel");
+        }
+    };
 }
