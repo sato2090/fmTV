@@ -8,6 +8,9 @@ build/
 node_modules/
 
 *.jks
+*.keystore
+*.p12
+*.pfx
 *.properties
 !runtime/gradle.properties
 lib-*.aar
