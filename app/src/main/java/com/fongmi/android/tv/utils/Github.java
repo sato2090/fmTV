@@ -8,7 +8,7 @@ public class Github {
     private static final String REPO = "FongMi/Release";
 
     public static String getReleases() {
-        return "https://api.github.com/repos/" + REPO + "/releases?per_page=100";
+        return "";
     }
 
     public static JSONObject getUpdate(JSONArray releases, String currentVersion, String filename) {

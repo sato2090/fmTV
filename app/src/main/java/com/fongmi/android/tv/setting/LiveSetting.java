@@ -5,7 +5,7 @@ import com.github.catvod.utils.Prefers;
 public class LiveSetting {
 
     public static boolean isBoot() {
-        return Prefers.getBoolean("boot_live");
+        return Prefers.getBoolean("boot_live", true);
     }
 
     public static void putBoot(boolean boot) {

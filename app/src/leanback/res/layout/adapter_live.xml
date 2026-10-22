@@ -17,8 +17,7 @@
         android:gravity="center"
         android:singleLine="true"
         android:textColor="@color/text"
-        android:textSize="18sp"
-        tools:text="https://fongmi.github.io/live.json" />
+        android:textSize="18sp" />
 
     <androidx.appcompat.widget.AppCompatImageView
         android:id="@+id/pass"

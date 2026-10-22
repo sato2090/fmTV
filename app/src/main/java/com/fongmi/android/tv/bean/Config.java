@@ -95,11 +95,13 @@ public class Config {
         return item == null ? create(0) : item;
     }
 
+    public static final String DEFAULT_LIVE = "https://gitee.com/kinnday/publicInfos/raw/master/ipm3u";
+
     public static Config live() {
-        String url = Prefers.getString("config_1");
+        String url = Prefers.getString("config_1", DEFAULT_LIVE);
         Config item = TextUtils.isEmpty(url) ? null : AppDatabase.get().getConfigDao().find(url, 1);
         if (item == null) item = AppDatabase.get().getConfigDao().findOne(1);
-        return item == null ? create(1) : item;
+        return item == null ? create(1, DEFAULT_LIVE, "央视卫视直播") : item;
     }
 
     public static Config wall() {

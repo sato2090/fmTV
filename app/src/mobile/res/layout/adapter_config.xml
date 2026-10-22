@@ -18,8 +18,7 @@
         android:textColor="?attr/colorOnSurface"
         android:textSize="14sp"
         app:backgroundTint="@color/selector_button"
-        app:strokeColor="@color/selector_stroke"
-        tools:text="https://fongmi.github.io/cat.json" />
+        app:strokeColor="@color/selector_stroke" />
 
     <com.fongmi.android.tv.ui.custom.DialogActionView
         android:id="@+id/delete"

@@ -63,80 +63,13 @@ public class Updater {
     }
 
     public void start(FragmentActivity activity, boolean force) {
-        if (!force && !modulesChecked) {
-            modulesChecked = true;
-            Task.execute(this::checkModules);
-        }
-        if (force) {
-            Notify.show(R.string.update_check);
-            Setting.putUpdate(true);
-        }
-        if (!Setting.getUpdate()) return;
-        if (downloading || paused || ready != null) {
-            if (force) show(activity);
-            return;
-        }
-        this.activity = new WeakReference<>(activity);
-        if (checking || dialog.get() != null || activity.getSupportFragmentManager().findFragmentByTag(UpdateDialog.TAG) != null) return;
-        checking = true;
-        Task.execute(this::checkRelease);
-    }
-
-    private void checkModules() {
-        try {
-            List<RuntimeModule> installed = getInstalledModules();
-            if (installed.isEmpty()) return;
-            JSONObject catalog = RuntimeInstaller.getCatalog(new CancellationSignal());
-            if (catalog == null) return;
-            List<String> updates = getModuleUpdates(installed, catalog);
-            if (updates.isEmpty()) return;
-            App.post(() -> onModulesChecked(updates));
-        } catch (IOException | RuntimeException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private List<RuntimeModule> getInstalledModules() {
-        RuntimeModule.refresh();
-        return Arrays.stream(RuntimeModule.values()).filter(RuntimeModule::isInstalled).toList();
-    }
-
-    private List<String> getModuleUpdates(List<RuntimeModule> installed, JSONObject catalog) throws IOException {
-        List<String> updates = new ArrayList<>();
-        for (RuntimeModule module : installed) {
-            JSONObject asset = RuntimeInstaller.getExternalAsset(module, catalog);
-            if (asset == null) continue;
-            long code = module.getVersionCode();
-            if (code > 0 && asset.optLong("versionCode") > code) updates.add(module == RuntimeModule.THUNDER ? ResUtil.getString(R.string.module_thunder) : module.title);
-        }
-        return updates;
-    }
-
-    private void onModulesChecked(List<String> updates) {
-        moduleNotice = ResUtil.getString(R.string.module_update_notice, String.join(", ", updates));
-        notifyModules();
+        // Disabled: do not check GitHub updates
     }
 
     public void notifyModules() {
-        if (moduleNotice == null || App.activity() == null) return;
-        Notify.show(moduleNotice);
-        moduleNotice = null;
     }
 
     private void checkRelease() {
-        try {
-            String abi = Process.is64Bit() ? "arm64_v8a" : "armeabi_v7a";
-            String filename = BuildConfig.FLAVOR + "-" + abi + ".apk";
-            JSONObject release = Github.getUpdate(new JSONArray(OkHttp.string(Github.getReleases())), BuildConfig.VERSION_NAME, filename);
-            if (release == null) {
-                App.post(() -> checking = false);
-                return;
-            }
-            prepareRelease(release, filename);
-        } catch (Exception e) {
-            e.printStackTrace();
-            App.post(() -> checking = false);
-        }
     }
 
     private void prepareRelease(JSONObject release, String filename) throws IOException {
