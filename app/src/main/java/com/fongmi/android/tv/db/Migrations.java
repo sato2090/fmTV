@@ -58,4 +58,11 @@ public class Migrations {
             database.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_Track_key_type_role` ON `Track` (`key`, `type`, `role`)");
         }
     };
+
+    public static final Migration MIGRATION_36_37 = new Migration(36, 37) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL("CREATE TABLE IF NOT EXISTS `InvalidChannel` (`key` TEXT NOT NULL, `time` INTEGER NOT NULL, PRIMARY KEY(`key`))");
+        }
+    };
 }

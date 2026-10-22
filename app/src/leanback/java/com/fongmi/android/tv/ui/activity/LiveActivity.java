@@ -25,12 +25,14 @@ import com.bumptech.glide.request.transition.Transition;
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.Constant;
 import com.fongmi.android.tv.R;
+import com.fongmi.android.tv.api.LiveChecker;
 import com.fongmi.android.tv.api.config.LiveConfig;
 import com.fongmi.android.tv.bean.Channel;
 import com.fongmi.android.tv.bean.Config;
 import com.fongmi.android.tv.bean.Epg;
 import com.fongmi.android.tv.bean.EpgData;
 import com.fongmi.android.tv.bean.Group;
+import com.fongmi.android.tv.bean.InvalidChannel;
 import com.fongmi.android.tv.bean.Keep;
 import com.fongmi.android.tv.bean.Live;
 import com.fongmi.android.tv.bean.Result;
@@ -69,6 +71,8 @@ import com.fongmi.android.tv.utils.ImgUtil;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.ResUtil;
 import com.fongmi.android.tv.utils.Traffic;
+import com.github.catvod.utils.Task;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
@@ -691,11 +695,42 @@ public class LiveActivity extends PlaybackActivity implements GroupAdapter.OnCli
     public boolean onLongClick(Channel item) {
         if (mGroup.isHidden()) return false;
         boolean exist = Keep.exist(item.getName());
+        String[] actions = {ResUtil.getString(exist ? R.string.keep_del : R.string.keep_add), ResUtil.getString(R.string.channel_test)};
+        new MaterialAlertDialogBuilder(this).setItems(actions, (dialog, which) -> {
+            if (which == 0) toggleKeep(item);
+            else testChannel(item);
+        }).show();
+        return true;
+    }
+
+    private void toggleKeep(Channel item) {
+        boolean exist = Keep.exist(item.getName());
         Notify.show(exist ? R.string.keep_del : R.string.keep_add);
         if (exist) delKeep(item);
         else addKeep(item);
         RefreshEvent.keep();
-        return true;
+    }
+
+    private void testChannel(Channel item) {
+        Notify.show(R.string.channel_testing);
+        Task.submit(() -> {
+            Boolean result = LiveChecker.check(item);
+            App.post(() -> onChannelTested(item, result));
+        });
+    }
+
+    private void onChannelTested(Channel item, Boolean result) {
+        if (result == null) {
+            Notify.show(R.string.channel_test_unsupported);
+        } else if (result) {
+            Notify.show(R.string.channel_valid);
+        } else {
+            InvalidChannel.save(InvalidChannel.key(getHome().getName(), item.getName()));
+            if (mGroup != null) mGroup.getChannel().remove(item);
+            mChannelAdapter.remove(item);
+            if (mChannelAdapter.getItemCount() == 0) mBinding.group.requestFocus();
+            Notify.show(getString(R.string.channel_invalid, item.getName()));
+        }
     }
 
     @Override

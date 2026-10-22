@@ -51,6 +51,7 @@ import com.fongmi.android.tv.server.Server;
 import com.fongmi.android.tv.service.DLNARendererService;
 import com.fongmi.android.tv.service.PlaybackService;
 import com.fongmi.android.tv.setting.LiveSetting;
+import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.ui.adapter.BaseDiffCallback;
 import com.fongmi.android.tv.ui.base.BaseActivity;
 import com.fongmi.android.tv.ui.custom.CustomRowPresenter;
@@ -209,6 +210,7 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
     private void setAdapter() {
         mHistoryAdapter = new ArrayObjectAdapter(mPresenter = new HistoryPresenter(this));
         mAdapter.add(new ListRow(mFuncAdapter = new ArrayObjectAdapter(new FuncPresenter(this))));
+        if (Setting.isSimpleHome()) return;
         mAdapter.add(R.string.home_history);
         mAdapter.add(R.string.home_recommend);
     }
@@ -293,6 +295,7 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
     }
 
     private void getVideo() {
+        if (Setting.isSimpleHome()) return;
         mResult = Result.empty();
         int index = getRecommendIndex();
         boolean gone = mAdapter.indexOf("progress") == -1;
@@ -323,12 +326,20 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
 
     private void setFunc() {
         List<Func> items = new ArrayList<>();
-        items.add(Func.create(R.string.home_vod));
-        if (LiveConfig.hasUrl()) items.add(Func.create(R.string.home_live));
-        items.add(Func.create(R.string.home_search));
-        items.add(Func.create(R.string.home_keep));
-        items.add(Func.create(R.string.home_push));
-        items.add(Func.create(R.string.home_setting));
+        if (Setting.isSimpleHome()) {
+            if (LiveConfig.hasUrl()) items.add(Func.create(R.string.home_live));
+            items.add(Func.create(R.string.home_keep));
+            items.add(Func.create(R.string.home_source));
+            items.add(Func.create(R.string.home_setting));
+        } else {
+            items.add(Func.create(R.string.home_vod));
+            if (LiveConfig.hasUrl()) items.add(Func.create(R.string.home_live));
+            items.add(Func.create(R.string.home_search));
+            items.add(Func.create(R.string.home_keep));
+            items.add(Func.create(R.string.home_push));
+            if (LiveConfig.hasUrl()) items.add(Func.create(R.string.home_source));
+            items.add(Func.create(R.string.home_setting));
+        }
         mFuncAdapter.setItems(items, new BaseDiffCallback<Func>());
     }
 
@@ -337,6 +348,7 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
     }
 
     private void getHistory(boolean renew) {
+        if (Setting.isSimpleHome()) return;
         List<History> items = History.get();
         int historyIndex = getHistoryIndex();
         int recommendIndex = getRecommendIndex();
@@ -363,6 +375,19 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
         return mAdapter.indexOf(R.string.home_history) + 1;
     }
 
+    private void updateSimpleRows() {
+        boolean simple = Setting.isSimpleHome();
+        boolean exist = mAdapter.indexOf(R.string.home_history) != -1;
+        if (simple && exist) {
+            if (mAdapter.size() > 1) mAdapter.removeItems(1, mAdapter.size() - 1);
+        } else if (!simple && !exist) {
+            mAdapter.add(R.string.home_history);
+            mAdapter.add(R.string.home_recommend);
+            getVideo();
+            getHistory(true);
+        }
+    }
+
     private int getRecommendIndex() {
         return mAdapter.indexOf(R.string.home_recommend) + 1;
     }
@@ -381,6 +406,7 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
                 break;
             case COMMON:
                 setFunc();
+                updateSimpleRows();
                 break;
             case BOOT:
                 LiveActivity.start(this);
@@ -444,6 +470,7 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
         else if (item.getResId() == R.string.home_keep) KeepActivity.start(this);
         else if (item.getResId() == R.string.home_push) LocalConnectDialog.show(this, "push");
         else if (item.getResId() == R.string.home_search) SearchActivity.start(this);
+        else if (item.getResId() == R.string.home_source) SourceActivity.start(this);
         else if (item.getResId() == R.string.home_setting) SettingActivity.start(this);
     }
 

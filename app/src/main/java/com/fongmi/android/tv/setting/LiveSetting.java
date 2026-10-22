@@ -43,4 +43,12 @@ public class LiveSetting {
     public static void putScale(int scale) {
         Prefers.put("scale_live", Math.clamp(scale, PlayerSetting.MIN_SCALE, PlayerSetting.MAX_SCALE));
     }
+
+    public static long getSyncTime() {
+        return Prefers.getLong("live_sync_time", 0);
+    }
+
+    public static void putSyncTime(long time) {
+        Prefers.put("live_sync_time", time);
+    }
 }

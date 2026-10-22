@@ -20,4 +20,33 @@
     <string name="dialog_action_grid">切换为网格</string>
     <string name="dialog_action_list">切换为列表</string>
 
+    <!-- Source -->
+    <string name="home_source">源地址</string>
+    <string name="setting_simple_home">简洁首页</string>
+    <string name="source_title">直播源管理</string>
+    <string name="source_name">源名称</string>
+    <string name="source_url">源地址</string>
+    <string name="source_stat_label">源内容</string>
+    <string name="source_stat">%1$d 个分组 · %2$d 个频道</string>
+    <string name="source_invalid_label">无效频道</string>
+    <string name="source_invalid">已标记 %1$d 个</string>
+    <string name="source_sync_label">上次同步</string>
+    <string name="source_never">从未同步</string>
+    <string name="source_last_sync">%1$s</string>
+    <string name="source_sync">同步源地址</string>
+    <string name="source_test_all">全量检测</string>
+    <string name="source_test_cancel">取消检测</string>
+    <string name="source_clear">清除无效标记</string>
+    <string name="source_clear_done">已清除无效标记</string>
+    <string name="source_sync_success">源地址同步成功</string>
+    <string name="source_testing">检测中…</string>
+    <string name="source_test_progress">已检测 %1$d/%2$d · 无效 %3$d</string>
+    <string name="source_test_done">检测完成：%1$d 个频道，%2$d 个不可用</string>
+    <string name="source_test_stopped">已取消检测</string>
+    <string name="channel_test">测试该源</string>
+    <string name="channel_testing">正在测试…</string>
+    <string name="channel_valid">该源可用</string>
+    <string name="channel_invalid">%1$s 不可用，已隐藏</string>
+    <string name="channel_test_unsupported">该源类型无法检测</string>
+
 </resources>

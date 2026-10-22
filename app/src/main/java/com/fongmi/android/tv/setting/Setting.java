@@ -105,6 +105,14 @@ public class Setting {
         Prefers.put("sync_mode", Math.clamp(mode, MIN_SYNC_MODE, MAX_SYNC_MODE));
     }
 
+    public static boolean isSimpleHome() {
+        return Prefers.getBoolean("simple_home", true);
+    }
+
+    public static void putSimpleHome(boolean simpleHome) {
+        Prefers.put("simple_home", simpleHome);
+    }
+
     public static boolean isIncognito() {
         return Prefers.getBoolean("incognito");
     }

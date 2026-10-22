@@ -24,10 +24,15 @@ public class LiveApi {
 
     public static void parse(@NonNull Live item) throws Exception {
         LiveParser.start(item.recent());
+        filterInvalid(item);
         item.getGroups().removeIf(Group::isEmpty);
         if (item.getGroups().isEmpty() || item.getGroups().get(0).isKeep()) return;
         item.getGroups().add(0, Group.create(R.string.keep));
         LiveConfig.get().applyKeepsToGroups(item.getGroups());
+    }
+
+    private static void filterInvalid(@NonNull Live item) {
+        LiveChecker.applyInvalid(item);
     }
 
     public static boolean parseXml(@NonNull Live item) {

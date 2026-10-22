@@ -84,6 +84,7 @@ public class SettingActivity extends BaseActivity implements ConfigListener, Sit
     private void setOtherText() {
         mBinding.dohText.setText(getDohList()[getDohIndex()]);
         mBinding.incognitoText.setText(Setting.getSwitch(Setting.isIncognito()));
+        mBinding.simpleHomeText.setText(Setting.getSwitch(Setting.isSimpleHome()));
         mBinding.sizeText.setText((size = ResUtil.getStringArray(R.array.select_size))[PlayerSetting.getSize()]);
     }
 
@@ -116,6 +117,8 @@ public class SettingActivity extends BaseActivity implements ConfigListener, Sit
         mBinding.liveHome.setOnClickListener(this::onLiveHome);
         mBinding.wall.setOnLongClickListener(this::onWallEdit);
         mBinding.incognito.setOnClickListener(this::setIncognito);
+        mBinding.simpleHome.setOnClickListener(this::setSimpleHome);
+        mBinding.source.setOnClickListener(view -> SourceActivity.start(this));
         mBinding.vodHistory.setOnClickListener(this::onVodHistory);
         mBinding.liveHistory.setOnClickListener(this::onLiveHistory);
         mBinding.wallDefault.setOnClickListener(this::setWallDefault);
@@ -249,6 +252,12 @@ public class SettingActivity extends BaseActivity implements ConfigListener, Sit
     private void setIncognito(View view) {
         Setting.putIncognito(!Setting.isIncognito());
         mBinding.incognitoText.setText(Setting.getSwitch(Setting.isIncognito()));
+    }
+
+    private void setSimpleHome(View view) {
+        Setting.putSimpleHome(!Setting.isSimpleHome());
+        mBinding.simpleHomeText.setText(Setting.getSwitch(Setting.isSimpleHome()));
+        ConfigEvent.common();
     }
 
     private void setSize(View view) {

@@ -20,4 +20,33 @@
     <string name="dialog_action_grid">切換為網格</string>
     <string name="dialog_action_list">切換為列表</string>
 
+    <!-- Source -->
+    <string name="home_source">來源位址</string>
+    <string name="setting_simple_home">簡潔首頁</string>
+    <string name="source_title">直播來源管理</string>
+    <string name="source_name">來源名稱</string>
+    <string name="source_url">來源位址</string>
+    <string name="source_stat_label">來源內容</string>
+    <string name="source_stat">%1$d 個分組 · %2$d 個頻道</string>
+    <string name="source_invalid_label">無效頻道</string>
+    <string name="source_invalid">已標記 %1$d 個</string>
+    <string name="source_sync_label">上次同步</string>
+    <string name="source_never">從未同步</string>
+    <string name="source_last_sync">%1$s</string>
+    <string name="source_sync">同步來源位址</string>
+    <string name="source_test_all">全量檢測</string>
+    <string name="source_test_cancel">取消檢測</string>
+    <string name="source_clear">清除無效標記</string>
+    <string name="source_clear_done">已清除無效標記</string>
+    <string name="source_sync_success">來源位址同步成功</string>
+    <string name="source_testing">檢測中…</string>
+    <string name="source_test_progress">已檢測 %1$d/%2$d · 無效 %3$d</string>
+    <string name="source_test_done">檢測完成：%1$d 個頻道，%2$d 個不可用</string>
+    <string name="source_test_stopped">已取消檢測</string>
+    <string name="channel_test">測試該來源</string>
+    <string name="channel_testing">正在測試…</string>
+    <string name="channel_valid">該來源可用</string>
+    <string name="channel_invalid">%1$s 不可用，已隱藏</string>
+    <string name="channel_test_unsupported">該來源類型無法檢測</string>
+
 </resources>

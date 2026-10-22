@@ -20,4 +20,33 @@
     <string name="dialog_action_grid">Switch to grid</string>
     <string name="dialog_action_list">Switch to list</string>
 
+    <!-- Source -->
+    <string name="home_source">Source</string>
+    <string name="setting_simple_home">Simple home</string>
+    <string name="source_title">Live source</string>
+    <string name="source_name">Name</string>
+    <string name="source_url">Address</string>
+    <string name="source_stat_label">Content</string>
+    <string name="source_stat">%1$d groups · %2$d channels</string>
+    <string name="source_invalid_label">Invalid</string>
+    <string name="source_invalid">%1$d marked</string>
+    <string name="source_sync_label">Synced</string>
+    <string name="source_never">Never synced</string>
+    <string name="source_last_sync">%1$s</string>
+    <string name="source_sync">Sync</string>
+    <string name="source_test_all">Test all</string>
+    <string name="source_test_cancel">Cancel test</string>
+    <string name="source_clear">Clear invalid</string>
+    <string name="source_clear_done">Invalid marks cleared</string>
+    <string name="source_sync_success">Source synchronized</string>
+    <string name="source_testing">Testing…</string>
+    <string name="source_test_progress">Tested %1$d/%2$d · invalid %3$d</string>
+    <string name="source_test_done">Done: %1$d channels, %2$d invalid</string>
+    <string name="source_test_stopped">Test cancelled</string>
+    <string name="channel_test">Test this source</string>
+    <string name="channel_testing">Testing…</string>
+    <string name="channel_valid">Source is available</string>
+    <string name="channel_invalid">%1$s is unavailable and hidden</string>
+    <string name="channel_test_unsupported">This source type cannot be tested</string>
+
 </resources>
